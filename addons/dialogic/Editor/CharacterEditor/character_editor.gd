@@ -36,6 +36,7 @@ func _register() -> void:
 	add_character_button.shortcut.events.append(InputEventKey.new())
 	add_character_button.shortcut.events[0].keycode = KEY_2
 	add_character_button.shortcut.events[0].ctrl_pressed = true
+	add_character_button.shortcut.events[0].command_or_control_autoremap = true
 
 	## By default show the no character screen
 	$NoCharacterScreen.show()
@@ -71,9 +72,9 @@ func _open_resource(resource:Resource) -> void:
 	load_portrait_tree()
 
 	loading = false
-	character_loaded.emit(resource.resource_path)
+	character_loaded.emit(current_resource.resource_path)
 
-	%CharacterName.text = DialogicResourceUtil.get_unique_identifier(resource.resource_path)
+	%CharacterName.text = current_resource.get_identifier()
 
 	$NoCharacterScreen.hide()
 	%PortraitChangeInfo.hide()
@@ -119,6 +120,9 @@ func _save() -> void:
 
 ## Saves a new empty character to the given path
 func new_character(path: String) -> void:
+	if not path.ends_with(".dch"):
+		path = path.trim_suffix(".")
+		path += ".dch"
 	var resource := DialogicCharacter.new()
 	resource.resource_path = path
 	resource.display_name = path.get_file().trim_suffix("."+path.get_extension())
@@ -165,6 +169,7 @@ func _ready() -> void:
 	## Add general tabs
 	add_settings_section(load("res://addons/dialogic/Editor/CharacterEditor/char_edit_section_general.tscn").instantiate(), %MainSettingsSections)
 	add_settings_section(load("res://addons/dialogic/Editor/CharacterEditor/char_edit_section_portraits.tscn").instantiate(), %MainSettingsSections)
+	add_settings_section(load("res://addons/dialogic/Editor/CharacterEditor/character_prefix_suffix.tscn").instantiate(), %MainSettingsSections)
 
 
 	add_settings_section(load("res://addons/dialogic/Editor/CharacterEditor/char_edit_p_section_main_exports.tscn").instantiate(), %PortraitSettingsSection)
@@ -188,10 +193,12 @@ func _ready() -> void:
 func add_settings_section(edit:Control, parent:Node) ->  void:
 	edit.changed.connect(something_changed)
 	edit.character_editor = self
+
 	if edit.has_signal('update_preview'):
 		edit.update_preview.connect(update_preview)
 
 	var button: Button
+
 	if edit._show_title():
 		var hbox := HBoxContainer.new()
 		hbox.name = edit._get_title()+"BOX"
@@ -365,7 +372,7 @@ func add_portrait(portrait_name:String='New portrait', portrait_data:Dictionary=
 
 func add_portrait_group() -> void:
 	var parent_item: TreeItem = %PortraitTree.get_root()
-	if %PortraitTree.get_selected() and %PortraitTree.get_selected().get_metadata(0).has('group'):
+	if %PortraitTree.get_selected() and %PortraitTree.get_selected().get_metadata(0) and %PortraitTree.get_selected().get_metadata(0).has('group'):
 		parent_item = %PortraitTree.get_selected()
 	var item: TreeItem = %PortraitTree.add_portrait_group("Group", parent_item)
 	item.set_meta('new', true)
@@ -543,7 +550,7 @@ func report_name_change(item: TreeItem) -> void:
 		editors_manager.reference_manager.add_portrait_ref_change(
 			item.get_meta('previous_name'),
 			%PortraitTree.get_full_item_name(item),
-			[DialogicResourceUtil.get_unique_identifier(current_resource.resource_path)])
+			[current_resource.get_identifier()])
 	item.set_meta('previous_name', %PortraitTree.get_full_item_name(item))
 	%PortraitChangeInfo.show()
 
