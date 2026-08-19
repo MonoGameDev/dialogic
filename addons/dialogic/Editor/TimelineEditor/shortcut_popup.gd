@@ -19,9 +19,9 @@ var shortcuts := [
 	{"shortcut":"Ctrl+F", 			"text":"Search"},
 	{"shortcut":"Ctrl+R", 			"text":"Replace"},
 	{},
-	{"shortcut":"Ctrl+F5", 			"text":"Play timeline", "platform":"-macOS"},
+	{"shortcut":"Ctrl+F6", 			"text":"Play timeline", "platform":"-macOS"},
 	{"shortcut":"Ctrl+B", 			"text":"Play timeline", "platform":"macOS"},
-	{"shortcut":"Ctrl+F6", 			"text":"Play timeline from here", "platform":"-macOS"},
+	{"shortcut":"Ctrl+Shift+F6", 	"text":"Play timeline from here", "platform":"-macOS"},
 	{"shortcut":"Ctrl+Shift+B", 	"text":"Play timeline from here", "platform":"macOS"},
 
 	{},
@@ -47,21 +47,24 @@ func _process_shortcuts_for_platform(shortcuts: Array) -> Array:
 	for shortcut in shortcuts:
 		if not (shortcut is Dictionary and "shortcut" in shortcut):
 			continue
-		
+
 		var shortcut_text = shortcut["shortcut"]
-		
+
 		if OS.has_feature("macos"):
 			shortcut_text = shortcut_text.replace("Ctrl", "Command")
 			shortcut_text = shortcut_text.replace("Alt", "Opt")
-		
+
 		var entry = shortcut.duplicate()
 		entry["shortcut"] = shortcut_text
 		formatted.append(entry)
-	
+
 	return formatted
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	if owner.get_parent() is SubViewport:
+		return
+
 	%CloseShortcutPanel.icon = get_theme_icon("Close", "EditorIcons")
 	get_theme_stylebox("panel").bg_color = get_theme_color("dark_color_3", "Editor")
 
